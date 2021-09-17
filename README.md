@@ -7,11 +7,6 @@ YAMP pipeline
 ## Usage
 
 ```{bash}
-s3://czb-seqbot/fastqs/210422_A00111_0707_AH5NYLDSX2/CZBMI-NICHE_PriorityEffect/DL200210_mE3-d1_Reprep-F14_R1.fastq.gz
-s3://czb-seqbot/fastqs/210422_A00111_0707_AH5NYLDSX2/CZBMI-NICHE_PriorityEffect/DL200210_mE3-d1_Reprep-F14_R2.fastq.gz
-```
-
-```{bash}
 aws batch submit-job \
     --profile maf \
     --job-name nf-rp-0914-2 \
