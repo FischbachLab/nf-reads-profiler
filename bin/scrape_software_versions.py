@@ -4,20 +4,16 @@ from collections import OrderedDict
 import re
 
 regexes = {
-    "nf-profile-reads": ["v_pipeline.txt", r"(\S+)"],
+    "nf-reads-profiler": ["v_pipeline.txt", r"(\S+)"],
     "Nextflow": ["v_nextflow.txt", r"(\S+)"],
-    "FastQC": ["v_fastqc.txt", r"(\S+)"],
-    "BBmap": ["v_bbmap.txt", r"(\S+)"],
     "MetaPhlAn": ["v_metaphlan.txt", r"MetaPhlAn version (\S+)"],
     "HUMAnN": ["v_humann.txt", r"humann v(\S+)"],
     "qiime": ["v_qiime.txt", r"(\S+)"],
     "MultiQC": ["v_multiqc.txt", r"(\S+)"],
 }
 results = OrderedDict()
-results["nf-profile-reads"] = '<span style="color:#999999;">N/A</span>'
+results["nf-reads-profiler"] = '<span style="color:#999999;">N/A</span>'
 results["Nextflow"] = '<span style="color:#999999;">N/A</span>'
-results["FastQC"] = '<span style="color:#999999;">N/A</span>'
-results["BBmap"] = '<span style="color:#999999;">N/A</span>'
 results["MetaPhlAn"] = '<span style="color:#999999;">N/A</span>'
 results["HUMAnN"] = '<span style="color:#999999;">N/A</span>'
 results["qiime"] = '<span style="color:#999999;">N/A</span>'
@@ -35,8 +31,8 @@ for k, v in regexes.items():
 print(
     """
 id: 'software-versions'
-section_name: 'nf-profile-reads Software Versions'
-section_href: 'https://github.com/fischbachlab/nf-profile-reads'
+section_name: 'nf-reads-profiler Software Versions'
+section_href: 'https://github.com/fischbachlab/nf-reads-profiler'
 plot_type: 'html'
 description: 'This information is collected at run time from the containers specification.'
 data: |
