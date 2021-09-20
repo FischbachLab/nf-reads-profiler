@@ -15,8 +15,8 @@ aws batch submit-job \
     --container-overrides command=s3://nextflow-pipelines/nf-reads-profiler,\
 "--prefix","paired_end_test",\
 "--singleEnd","false",\
-"--reads1","s3://nextflow-pipelines/nf-reads-profiler/data/test_data/random_ncbi_reads_with_duplicated_and_contaminants_R1.fastq.gz",\
-"--reads2","s3://nextflow-pipelines/nf-reads-profiler/data/test_data/random_ncbi_reads_with_duplicated_and_contaminants_R2.fastq.gz"
+"--reads1","s3://dev-scratch/fastq/small/random_ncbi_reads_with_duplicated_and_contaminants_R1.fastq.gz",\
+"--reads2","s3://dev-scratch/fastq/small/random_ncbi_reads_with_duplicated_and_contaminants_R2.fastq.gz"
 ```
 
 ## Databases
@@ -75,3 +75,10 @@ docker container run \
 ```
 
 This will create a subdirectory `uniref`, and download and extract the database here.
+
+#### Updating the pipeline
+
+```{bash}
+cd nf-reads-profiler
+aws s3 sync --profile maf . s3://nextflow-pipelines/nf-reads-profiler --delete --exclude '.git*' --exclude '*.gz'
+```
