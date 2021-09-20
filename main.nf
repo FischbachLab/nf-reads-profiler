@@ -119,7 +119,7 @@ summary['Merge Reads'] = params.mergeReads
 
 //BowTie2 databases for metaphlan
 summary['MetaPhlAn parameters'] = ""
-summary['MetaPhlAn database'] = params.metaphlan_databases
+summary['MetaPhlAn database'] = params.metaphlan_db
 summary['Bowtie2 options'] = params.bt2options
 
 // ChocoPhlAn and UniRef databases
@@ -191,6 +191,7 @@ process get_software_versions {
 	metaphlan --version > v_metaphlan.txt
 	humann --version > v_humann.txt
 		
+	echo $params.docker_container_qiime2 | cut -d: -f 2 > v_qiime.txt
 	echo $params.docker_container_multiqc | cut -d: -f 2 > v_multiqc.txt
 	
 	scrape_software_versions.py > software_versions_mqc.yaml
@@ -231,6 +232,7 @@ if (params.singleEnd) {
 process merge_paired_end_cleaned {
 
 	tag "$name"
+	container params.docker_container_bbmap
 		
 	input:
 	tuple val(name), file(reads) from reads_merge_paired_end_cleaned
@@ -247,11 +249,11 @@ process merge_paired_end_cleaned {
 	# This step will have no logging because the information are not relevant
 	# I will simply use a boilerplate YAML to record that this has happened
 	# If the files were not compressed, they will be at this stage
-	if (file ${reads[0]} | grep -q compressed ) ; then
-	    cat ${reads[0]} ${reads[1]} > ${name}_QCd.fq.gz
-	else
-		cat ${reads[0]} ${reads[1]} | gzip > ${name}_QCd.fq.gz
-	fi
+	
+	#Sets the maximum memory to the value requested in the config file
+    maxmem=\$(echo \"$task.memory\" | sed 's/ //g' | sed 's/B//g')
+
+	reformat.sh -Xmx\"\$maxmem\" in1=${reads[0]} in2=${reads[1]} out=${name}_QCd.fq.gz threads=${task.cpus}
 	"""
 }
 
@@ -286,16 +288,16 @@ process profile_taxa {
 	"""
 	metaphlan \\
 		--input_type fastq \\
-		--tmp_dir=. \\
+		--tmp_dir . \\
 		--biom ${name}.biom \\
-		--bowtie2out=${name}_bt2out.txt \\
+		--bowtie2out ${name}_bt2out.txt \\
 		--bowtie2db ${params.metaphlan_db} \\
 		--bt2_ps ${params.bt2options} \\
 		--add_viruses \\
 		--sample_id ${name} \\
 		--nproc ${task.cpus} \\
 		$reads \\
-		${name}_metaphlan_bugs_list.tsv &> profile_taxa_mqc.txt
+		${name}_metaphlan_bugs_list.tsv 1> profile_taxa_mqc.txt
 	
 	# MultiQC doesn't have a module for Metaphlan yet. As a consequence, I
 	# had to create a YAML file with all the info I need via a bash script
@@ -411,7 +413,9 @@ process alpha_diversity {
 */
 
 // Stage config files
-multiqc_config = file(params.multiqc_config)
+Channel
+	.fromPath(params.multiqc_config)
+	.set {multiqc_config_ch}
 
 process log {
 	
@@ -420,7 +424,7 @@ process log {
     container params.docker_container_multiqc
 
 	input:
-	file multiqc_config
+	file multiqc_config from multiqc_config_ch
 	file workflow_summary from create_workflow_summary(summary)
 	file "software_versions_mqc.yaml" from software_versions_yaml
 	file "merge_paired_end_cleaned_mqc.yaml" from merge_paired_end_cleaned_log.ifEmpty([])
