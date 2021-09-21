@@ -273,7 +273,7 @@ process profile_taxa {
 	//Enable multicontainer settings
     container params.docker_container_biobakery
 
-	publishDir "${params.outdir}/${params.prefix}", mode: 'copy', pattern: "*.{biom,tsv}"
+	publishDir "${workingpath}/${params.prefix}/taxa", mode: 'copy', pattern: "*.{biom,tsv}"
 	
 	input:
 	tuple val(name), file(reads) from to_profile_taxa.mix(to_profile_taxa_merged)
@@ -321,7 +321,7 @@ process profile_function {
 	//Enable multicontainer settings
     container params.docker_container_biobakery
 
-	publishDir "${params.outdir}/${params.prefix}", mode: 'copy', pattern: "*.{tsv,log}"
+	publishDir "${workingpath}/${params.prefix}/function", mode: 'copy', pattern: "*.{tsv,log}"
 	
 	input:
 	tuple val(name), file(reads) from to_profile_functions.mix(to_profile_functions_merged)
@@ -366,7 +366,7 @@ process alpha_diversity {
 
 	container params.docker_container_qiime2
 
-	publishDir "${params.outdir}/${params.prefix}", mode: 'copy', pattern: "*.{tsv}"
+	publishDir "${workingpath}/${params.prefix}/alpha_diversity", mode: 'copy', pattern: "*.{tsv}"
 	
 	input:
 	tuple val(name), file(metaphlan_bug_list) from to_alpha_diversity
@@ -419,7 +419,7 @@ Channel
 
 process log {
 	
-	publishDir "${params.outdir}/${params.prefix}", mode: 'copy'
+	publishDir "${workingpath}/${params.prefix}/log", mode: 'copy'
 
     container params.docker_container_multiqc
 
