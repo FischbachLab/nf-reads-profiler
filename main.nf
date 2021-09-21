@@ -68,7 +68,7 @@ if ((!params.singleEnd && (params.reads1 == "null" || params.reads2 == "null")) 
 }
 
 //Creates working dir
-workingpath = params.outdir + "/" + params.prefix
+workingpath = params.outdir + "/" + params.project
 workingdir = file(workingpath)
 if( !workingdir.exists() ) {
 	if( !workingdir.mkdirs() ) 	{
@@ -253,7 +253,7 @@ process merge_paired_end_cleaned {
 	#Sets the maximum memory to the value requested in the config file
     maxmem=\$(echo \"$task.memory\" | sed 's/ //g' | sed 's/B//g')
 
-	reformat.sh -Xmx\"\$maxmem\" in1=${reads[0]} in2=${reads[1]} out=${name}_QCd.fq.gz threads=${task.cpus}
+	reformat.sh -Xmx\"\$maxmem\" in1=\"${reads[0]}\" in2=\"${reads[1]}\" out=\"${name}_QCd.fq.gz\" threads=${task.cpus}
 	"""
 }
 
