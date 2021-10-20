@@ -76,7 +76,7 @@ docker container run \
 
 This will create a subdirectory `uniref`, and download and extract the database here.
 
-#### Updating the pipeline
+## Updating the pipeline
 
 ```{bash}
 cd nf-reads-profiler
