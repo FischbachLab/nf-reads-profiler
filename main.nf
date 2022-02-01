@@ -5,7 +5,7 @@ def versionMessage()
 {
 	log.info"""
 	 
-	YET ANOTHER METAGENOMIC PIPELINE (nf-reads-profiler) - Version: ${workflow.manifest.version} 
+	nf-reads-profiler - Version: ${workflow.manifest.version} 
 	""".stripIndent()
 }
 
@@ -13,7 +13,7 @@ def helpMessage()
 {
 	log.info"""
 
-Metaphlan 3 (nf-reads-profiler) - Version: ${workflow.manifest.version} 
+nf-reads-profiler - Version: ${workflow.manifest.version} 
   
   Mandatory arguments:
     --reads1   R1      Forward (if paired-end) OR all reads (if single-end) file path
@@ -30,10 +30,11 @@ Metaphlan 3 (nf-reads-profiler) - Version: ${workflow.manifest.version}
     --bt2options          value   BowTie2 options
   
   HUMANn parameters for functional profiling:
+    --taxonomic_profile	  path	  s3path to precalculate metaphlan3 taxonomic profile output.
     --chocophlan          path    folder for the ChocoPhlAn database
     --uniref              path	  folder for the UniRef database
 
-nf-profile-reads supports FASTQ and compressed FASTQ files.
+nf-reads-profiler supports FASTQ and compressed FASTQ files.
 """
 }
 
@@ -67,6 +68,11 @@ if ((!params.singleEnd && (params.reads1 == "null" || params.reads2 == "null")) 
 	exit 1, "Please set the reads1 and/or reads2 parameters"
 }
 
+// if rna is True, taxonomic profile is required.
+// if (params.rna && params.taxonomic_profile == ""){
+// 	exit 1, "Please set the --taxonomic_profile parameter for transcriptiomic data."
+// }
+
 //Creates working dir
 workingpath = params.outdir + "/" + params.project
 workingdir = file(workingpath)
@@ -79,7 +85,7 @@ if( !workingdir.exists() ) {
 
 // Header log info
 log.info """---------------------------------------------
-Metaphlan (nf-profile-reads) 
+nf-reads-profiler
 ---------------------------------------------
 
 Analysis introspection:
@@ -91,7 +97,7 @@ def summary = [:]
 summary['Starting time'] = new java.util.Date() 
 //Environment
 summary['Environment'] = ""
-summary['Pipeline Name'] = 'nf-profile-reads'
+summary['Pipeline Name'] = 'nf-reads-profiler'
 summary['Pipeline Version'] = workflow.manifest.version
 
 summary['Config Profile'] = workflow.profile
@@ -115,6 +121,7 @@ summary['Running parameters'] = ""
 summary['Reads'] = "[" + params.reads1 + ", " + params.reads2 + "]"
 summary['Prefix'] = params.prefix
 summary['Layout'] = params.singleEnd ? 'Single-End' : 'Paired-End'
+summary['Data Type'] = params.rna ? 'Metatranscriptomic' : 'Metagenomic'
 summary['Merge Reads'] = params.mergeReads
 
 //BowTie2 databases for metaphlan
@@ -124,6 +131,7 @@ summary['Bowtie2 options'] = params.bt2options
 
 // ChocoPhlAn and UniRef databases
 summary['HUMAnN parameters'] = ""
+summary['Taxonomic Profile'] = params.taxonomic_profile
 summary['Chocophlan database'] = params.chocophlan
 summary['Uniref database'] = params.uniref
 
@@ -147,12 +155,12 @@ log.info ""
 */
 
 def create_workflow_summary(summary) {
-    def yaml_file = workDir.resolve('workflow_summary_mqc.yaml')
+    def yaml_file = workDir.resolve("${params.prefix}.workflow_summary_mqc.yaml")
     yaml_file.text  = """
     id: 'workflow-summary'
     description: "This information is collected when the pipeline is started."
-    section_name: 'nf-profile-reads Workflow Summary'
-    section_href: 'https://github.com/fischbachlab/nf-profile-reads'
+    section_name: 'nf-reads-profiler Workflow Summary'
+    section_href: 'https://github.com/fischbachlab/nf-reads-profiler'
     plot_type: 'html'
     data: |
         <dl class=\"dl-horizontal\">
@@ -202,7 +210,7 @@ process get_software_versions {
 //  COMMUNITY CHARACTERISATION 
 // ------------------------------------------------------------------------------   
 
-// The user will specify the clean file either as a single clean file (that is the nf-profile-reads
+// The user will specify the clean file either as a single clean file (that is the nf-reads-profiler
 // default behaviour), or as two files (forward/reverse). ]
 // In the former case, the user will set singleEnd = true and only one file will be 
 // selected and used directly for taxa and community profiling.
@@ -210,24 +218,34 @@ process get_software_versions {
 // be merged before feeding the relevant channels for profiling.
 if (params.singleEnd) {
 	Channel
-	.from([[params.prefix, [file(params.reads1)]]])
-	.into { to_profile_taxa; to_profile_functions }
-	
+		.from([[params.prefix, [file(params.reads1)]]])
+		.into { to_profile_taxa; to_profile_functions }
+
 	//Initialise empty channels
 	reads_merge_paired_end_cleaned = Channel.empty()
 	merge_paired_end_cleaned_log = Channel.empty()
 } else if (!params.singleEnd) {
 	Channel
-	.from([[params.prefix, [file(params.reads1), file(params.reads2)]]] )
-	.set { reads_merge_paired_end_cleaned }
+		.from([[params.prefix, [file(params.reads1), file(params.reads2)]]] )
+		.set { reads_merge_paired_end_cleaned }
 	
 	//Stage boilerplate log
 	merge_paired_end_cleaned_log = Channel.from(file("$baseDir/assets/merge_paired_end_cleaned_mqc.yaml"))
-	
+
 	//Initialise empty channels
 	to_profile_taxa = Channel.empty()
 	to_profile_functions = Channel.empty()
 } 
+
+
+if (params.rna){
+	Channel
+		.from([[params.prefix, file(params.taxonomic_profile)]])
+		.set{ custom_taxa_profile }
+}
+else{
+	custom_taxa_profile = Channel.empty()
+}
 
 process merge_paired_end_cleaned {
 
@@ -253,7 +271,7 @@ process merge_paired_end_cleaned {
 	#Sets the maximum memory to the value requested in the config file
     maxmem=\$(echo \"$task.memory\" | sed 's/ //g' | sed 's/B//g')
 
-	reformat.sh -Xmx\"\$maxmem\" in1=\"${reads[0]}\" in2=\"${reads[1]}\" out=\"${name}_QCd.fq.gz\" threads=${task.cpus}
+	reformat.sh -Xmx\"\$maxmem\" in1=${reads[0]} in2=${reads[1]} out=${name}_QCd.fq.gz threads=${task.cpus}
 	"""
 }
 
@@ -282,7 +300,9 @@ process profile_taxa {
 	tuple val(name), path("*.biom") into to_alpha_diversity
 	tuple val(name), path("*_metaphlan_bugs_list.tsv") into to_profile_function_bugs
 	file "profile_taxa_mqc.yaml" into profile_taxa_log
-	
+
+	when:
+	!params.rna
 	
 	script:
 	"""
@@ -321,11 +341,11 @@ process profile_function {
 	//Enable multicontainer settings
     container params.docker_container_biobakery
 
-	publishDir "${workingpath}/${params.prefix}/function", mode: 'copy', pattern: "*.{tsv,log}"
+	publishDir {params.rna ? "${workingpath}/${params.prefix}/function/metaT" : "${workingpath}/${params.prefix}/function/metaG" }, mode: 'copy', pattern: "*.{tsv,log}"
 	
 	input:
 	tuple val(name), file(reads) from to_profile_functions.mix(to_profile_functions_merged)
-	tuple val(name), file(metaphlan_bug_list) from to_profile_function_bugs
+	tuple val(name), file(metaphlan_bug_list) from to_profile_function_bugs.mix(custom_taxa_profile)
 	
     output:
 	file "*_HUMAnN.log"
@@ -336,12 +356,14 @@ process profile_function {
 
 	script:
 	"""
+	head -n 3 ${metaphlan_bug_list}
+	ls -lhtr ${metaphlan_bug_list}
 	#HUMAnN will use the list of species detected by the profile_taxa process
 	humann \\
 		--input $reads \\
 		--output . \\
 		--output-basename ${name} \\
-		--taxonomic-profile $metaphlan_bug_list \\
+		--taxonomic-profile ${metaphlan_bug_list} \\
 		--nucleotide-database ${params.chocophlan} \\
 		--protein-database ${params.uniref} \\
 		--pathways metacyc \\
@@ -374,6 +396,9 @@ process alpha_diversity {
     output:
 	file "*_alpha_diversity.tsv"
 	file "alpha_diversity_mqc.yaml" into alpha_diversity_log
+
+	when:
+	!params.rna
 
 	script:
 	"""
@@ -433,8 +458,8 @@ process log {
 	file "alpha_diversity_mqc.yaml" from alpha_diversity_log.ifEmpty([])
 	
 	output:
-	path "*multiqc_report*.html" into multiqc_report
-	path "*multiqc_data*"
+	path "${params.prefix}_multiqc_report.html" into multiqc_report
+	path "${params.prefix}_multiqc_data"
 
 	script:
 	"""
