@@ -14,9 +14,9 @@ import concurrent.futures
 def usage():
     usage = """
     python aggregate_mp_output.py \
-        --s3prefix s3://gwfcore-results/Results/Reads-Profiler/2021_10_12_CP04021-A \
+        --s3prefix s3://genomics-workflow-core/Results/reads-profiler/MouseBackfill_v1 \
         --suffix metaphlan_bugs_list.tsv \
-        --output 2021_10_12_CP04021-A.metaphlan_agg_rel_ab.csv
+        --output MouseBackfill_v1.metaphlan_agg_rel_ab.csv
     """
 
     # Making default argument list structures
@@ -272,7 +272,7 @@ def main():
     s3path = args["s3prefix"]
     suffix = args["suffix"]
     output = args["output"]
-    #use_tax_ids = args["taxid"]
+    # use_tax_ids = args["taxid"]
     cores = args["cores"]
     aws_profile = args["profile"]
 
