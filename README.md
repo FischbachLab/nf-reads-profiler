@@ -40,7 +40,6 @@ cd /mnt/efs/databases/Biobakery
 docker container run \
     --volume $PWD:$PWD \
     --workdir $PWD \
-    -it \
     --rm \
     biobakery/workflows:3.0.0.a.7 \
     metaphlan \
@@ -59,7 +58,6 @@ cd /mnt/efs/databases/Biobakery
 docker container run \
     --volume $PWD:$PWD \
     --workdir $PWD \
-    -it \
     --rm \
     biobakery/workflows:3.0.0.a.7 \
         humann_databases \
@@ -76,7 +74,6 @@ cd /mnt/efs/databases/Biobakery
 docker container run \
     --volume $PWD:$PWD \
     --workdir $PWD \
-    -it \
     --rm \
     biobakery/workflows:3.0.0.a.7 \
         humann_databases \
