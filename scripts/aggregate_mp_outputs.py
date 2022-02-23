@@ -272,7 +272,7 @@ def main():
     s3path = args["s3prefix"]
     suffix = args["suffix"]
     output = args["output"]
-    use_tax_ids = args["taxid"]
+    #use_tax_ids = args["taxid"]
     cores = args["cores"]
     aws_profile = args["profile"]
 
