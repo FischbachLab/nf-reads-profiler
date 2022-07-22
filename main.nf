@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
 
-
+nextflow.enable.dsl=1
 def versionMessage() 
 {
 	log.info"""
