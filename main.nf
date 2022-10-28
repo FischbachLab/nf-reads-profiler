@@ -311,6 +311,7 @@ process profile_taxa {
 		--tmp_dir . \\
 		--biom ${name}.biom \\
 		--bowtie2out ${name}_bt2out.txt \\
+		--index ${params.metaphlan_index} \\
 		--bowtie2db ${params.metaphlan_db} \\
 		--bt2_ps ${params.bt2options} \\
 		--add_viruses \\
