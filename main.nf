@@ -291,7 +291,7 @@ process profile_taxa {
 	//Enable multicontainer settings
     container params.docker_container_biobakery
 
-	publishDir "${workingpath}/${params.prefix}/taxa", mode: 'copy', pattern: "*.{biom,tsv}"
+	publishDir "${workingpath}/${params.prefix}/taxa", mode: 'copy', pattern: "*.{biom,tsv,txt}"
 	
 	input:
 	tuple val(name), file(reads) from to_profile_taxa.mix(to_profile_taxa_merged)
@@ -310,13 +310,14 @@ process profile_taxa {
 		--input_type fastq \\
 		--tmp_dir . \\
 		--biom ${name}.biom \\
-		--bowtie2out ${name}_bt2out.txt \\
 		--index ${params.metaphlan_index} \\
 		--bowtie2db ${params.metaphlan_db} \\
+		--bowtie2out ${name}.bowtie2out.txt \\
 		--bt2_ps ${params.bt2options} \\
 		--add_viruses \\
 		--sample_id ${name} \\
 		--nproc ${task.cpus} \\
+		--unclassified_estimation \\
 		$reads \\
 		${name}_metaphlan_bugs_list.tsv 1> profile_taxa_mqc.txt
 	
