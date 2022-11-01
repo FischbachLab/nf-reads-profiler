@@ -13,7 +13,6 @@ aws batch submit-job \
     --job-queue priority-maf-pipelines \
     --job-definition nextflow-production \
     --container-overrides command=fischbachlab/nf-reads-profiler,\
-"-r","metaphlan4",\
 "--prefix","branch_metaphlan4",\
 "--singleEnd","false",\
 "--reads1","s3://dev-scratch/fastq/small/random_ncbi_reads_with_duplicated_and_contaminants_R1.fastq.gz",\
@@ -22,8 +21,10 @@ aws batch submit-job \
 
 ### Cross account test
 
+```bash
 "--reads1","s3://czb-seqbot/fastqs/200817_NB501938_0185_AH23FNBGXG/MITI_Purification_Healthy/E8_SH0000236_0619-Cult-2-481_S22_R1_001.fastq.gz",\
 "--reads2","s3://czb-seqbot/fastqs/200817_NB501938_0185_AH23FNBGXG/MITI_Purification_Healthy/E8_SH0000236_0619-Cult-2-481_S22_R2_001.fastq.gz"
+```
 
 ## Databases
 
@@ -46,7 +47,7 @@ docker container run \
 
 ### Humann3
 
-This requires 2 databases.
+This requires 3 databases.
 
 #### Chocophlan
 
