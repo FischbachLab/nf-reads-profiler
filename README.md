@@ -84,3 +84,17 @@ docker container run \
 ```
 
 This will create a subdirectory `uniref`, and download and extract the database here.
+
+#### Utility Script Databases
+
+```bash
+cd /mnt/efs/databases/Biobakery/Humann/v3.6
+docker container run \
+    --volume $PWD:$PWD \
+    --workdir $PWD \
+    --rm \
+    458432034220.dkr.ecr.us-west-2.amazonaws.com/biobakery/workflows:maf-20221028-a1 \
+    humann_databases \
+        --download \
+        utility_mapping full .
+```
