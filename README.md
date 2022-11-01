@@ -9,21 +9,16 @@ This pipeline is based on the original [YAMP](https://github.com/alesssia/YAMP) 
 ```{bash}
 aws batch submit-job \
     --profile maf \
-    --job-name nf-rp-1210-1 \
+    --job-name nf-rp-1101-1 \
     --job-queue priority-maf-pipelines \
     --job-definition nextflow-production \
     --container-overrides command=fischbachlab/nf-reads-profiler,\
 "-r","metaphlan4",\
-"--prefix","paired_end_test",\
+"--prefix","branch_metaphlan4",\
 "--singleEnd","false",\
-"--reads1","s3://czb-seqbot/fastqs/200817_NB501938_0185_AH23FNBGXG/MITI_Purification_Healthy/E8_SH0000236_0619-Cult-2-481_S22_R1_001.fastq.gz",\
-"--reads2","s3://czb-seqbot/fastqs/200817_NB501938_0185_AH23FNBGXG/MITI_Purification_Healthy/E8_SH0000236_0619-Cult-2-481_S22_R2_001.fastq.gz"
-```
-
-### Same account test
-
 "--reads1","s3://dev-scratch/fastq/small/random_ncbi_reads_with_duplicated_and_contaminants_R1.fastq.gz",\
 "--reads2","s3://dev-scratch/fastq/small/random_ncbi_reads_with_duplicated_and_contaminants_R2.fastq.gz"
+```
 
 ### Cross account test
 
@@ -98,3 +93,15 @@ docker container run \
         --download \
         utility_mapping full .
 ```
+
+aws batch submit-job \
+    --profile maf \
+    --job-name nf-rp-1101-1 \
+    --job-queue priority-maf-pipelines \
+    --job-definition nextflow-production \
+    --container-overrides command=fischbachlab/nf-reads-profiler,\
+"-r","metaphlan4",\
+"--prefix","updated_versions",\
+"--singleEnd","false",\
+"--reads1","s3://maf-sequencing/NCBI_SRA/PRJNA612780/SRR11313247_R1.fastq.gz",\
+"--reads2","s3://maf-sequencing/NCBI_SRA/PRJNA612780/SRR11313247_R2.fastq.gz"
