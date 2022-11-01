@@ -9,7 +9,7 @@ This pipeline is based on the original [YAMP](https://github.com/alesssia/YAMP) 
 ```{bash}
 aws batch submit-job \
     --profile maf \
-    --job-name nf-rp-1101-1 \
+    --job-name nf-rp-1101-2 \
     --job-queue priority-maf-pipelines \
     --job-definition nextflow-production \
     --container-overrides command=fischbachlab/nf-reads-profiler,\
@@ -93,15 +93,3 @@ docker container run \
         --download \
         utility_mapping full .
 ```
-
-aws batch submit-job \
-    --profile maf \
-    --job-name nf-rp-1101-1 \
-    --job-queue priority-maf-pipelines \
-    --job-definition nextflow-production \
-    --container-overrides command=fischbachlab/nf-reads-profiler,\
-"-r","metaphlan4",\
-"--prefix","updated_versions",\
-"--singleEnd","false",\
-"--reads1","s3://maf-sequencing/NCBI_SRA/PRJNA612780/SRR11313247_R1.fastq.gz",\
-"--reads2","s3://maf-sequencing/NCBI_SRA/PRJNA612780/SRR11313247_R2.fastq.gz"
