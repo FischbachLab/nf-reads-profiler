@@ -1,38 +1,43 @@
 #!/usr/bin/env nextflow
 
-nextflow.enable.dsl=1
-def versionMessage() 
+nextflow.enable.dsl=2
+
+include { profile_taxa; profile_function; alpha_diversity } from './modules/community_characterisation'
+include { merge_paired_end_cleaned; get_software_versions; log } from './modules/house_keeping'
+
+def versionMessage()
 {
 	log.info"""
-	 
-	nf-reads-profiler - Version: ${workflow.manifest.version} 
+
+	nf-reads-profiler - Version: ${workflow.manifest.version}
 	""".stripIndent()
 }
 
-def helpMessage() 
+def helpMessage()
 {
 	log.info"""
 
-nf-reads-profiler - Version: ${workflow.manifest.version} 
-  
+nf-reads-profiler - Version: ${workflow.manifest.version}
+
   Mandatory arguments:
-    --reads1   R1      Forward (if paired-end) OR all reads (if single-end) file path
+    --reads1   R1      Forward (if paired-end) OR all reads (if single-end) path path
     [--reads2] R2      Reverse reads file path (only if paired-end library layout)
     --prefix   prefix  Prefix used to name the result files
     --outdir   path    Output directory (will be outdir/prefix/)
-  
+
   Main options:
     --singleEnd  <true|false>   whether the layout is single-end
-  
+
   Other options:
   MetaPhlAn parameters for taxa profiling:
-    --metaphlan_db path    folder for the MetaPhlAn database
+    --metaphlan_db path   folder for the MetaPhlAn database
     --bt2options          value   BowTie2 options
-  
+
   HUMANn parameters for functional profiling:
     --taxonomic_profile	  path	  s3path to precalculate metaphlan3 taxonomic profile output.
     --chocophlan          path    folder for the ChocoPhlAn database
     --uniref              path	  folder for the UniRef database
+		--annotation  <true|false>   whether annotation is enabled (default: false)
 
 nf-reads-profiler supports FASTQ and compressed FASTQ files.
 """
@@ -61,7 +66,7 @@ if (!params.singleEnd && (params.reads2 == "null") ) {
 	exit 1, "If dealing with paired-end reads, please set the reads2 parameters\nif dealing with single-end reads, please set the library layout to 'single'"
 }
 
-//--reads1 and --reads2 can be omitted (and the default from the config file used instead) 
+//--reads1 and --reads2 can be omitted (and the default from the config file used instead)
 //only when mode is "characterisation". Obviously, --reads2 should be always omitted when the
 //library layout is single.
 if ((!params.singleEnd && (params.reads1 == "null" || params.reads2 == "null")) || (params.singleEnd && params.reads1 == "null")) {
@@ -79,8 +84,8 @@ workingdir = file(workingpath)
 if( !workingdir.exists() ) {
 	if( !workingdir.mkdirs() ) 	{
 		exit 1, "Cannot create working directory: $workingpath"
-	} 
-}	
+	}
+}
 
 
 // Header log info
@@ -94,7 +99,7 @@ Analysis introspection:
 
 def summary = [:]
 
-summary['Starting time'] = new java.util.Date() 
+summary['Starting time'] = new java.util.Date()
 //Environment
 summary['Environment'] = ""
 summary['Pipeline Name'] = 'nf-reads-profiler'
@@ -102,7 +107,7 @@ summary['Pipeline Version'] = workflow.manifest.version
 
 summary['Config Profile'] = workflow.profile
 summary['Resumed'] = workflow.resume
-		
+
 summary['Nextflow version'] = nextflow.version.toString() + " build " + nextflow.build.toString() + " (" + nextflow.timestamp + ")"
 
 summary['Java version'] = System.getProperty("java.version")
@@ -171,304 +176,75 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd>$v</dd>" }.join("\n")}
    return yaml_file
 }
 
-/**
-	Gets software version. 
 
-	This process ensures that software version are included in the logs.
-*/
 
-process get_software_versions {
 
-	//Starting the biobakery container. I need to run metaphlan and Humann to get
-	//their version number (due to the fact that they live in the same container)
-    container params.docker_container_biobakery
-
-	output:
-	file "software_versions_mqc.yaml" into software_versions_yaml
-
-	script:
-	//I am using a multi-containers scenarios, supporting docker and singularity
-	//with the software at a specific version (the same for all platforms). Therefore, I
-	//will simply parse the version from there. Perhaps overkill, but who cares?  
-	//This is not true for the biobakery suite (metaphlan/humann) which extract the 
-	//information at runtime from the actual commands (see comment above)
-	"""
-	echo $workflow.manifest.version > v_pipeline.txt
-	echo $workflow.nextflow.version > v_nextflow.txt
-
-	metaphlan --version > v_metaphlan.txt
-	humann --version > v_humann.txt
-		
-	echo $params.docker_container_qiime2 | cut -d: -f 2 > v_qiime.txt
-	echo $params.docker_container_multiqc | cut -d: -f 2 > v_multiqc.txt
-	
-	scrape_software_versions.py > software_versions_mqc.yaml
-	"""
-}
-
-// ------------------------------------------------------------------------------   
-//  COMMUNITY CHARACTERISATION 
-// ------------------------------------------------------------------------------   
-
-// The user will specify the clean file either as a single clean file (that is the nf-reads-profiler
+// The user will specify the clean path either as a single clean file (that is the nf-reads-profiler
 // default behaviour), or as two files (forward/reverse). ]
-// In the former case, the user will set singleEnd = true and only one file will be 
+// In the former case, the user will set singleEnd = true and only one file will be
 // selected and used directly for taxa and community profiling.
 // In the latter case, the user will set singleEnd = false and provide two files, that will
 // be merged before feeding the relevant channels for profiling.
 if (params.singleEnd) {
-	Channel
-		.from([[params.prefix, [file(params.reads1)]]])
-		.into { to_profile_taxa; to_profile_functions }
+	to_profile_taxa_functions = Channel
+		.fromList([[params.prefix, [params.reads1]]])
 
 	//Initialise empty channels
 	reads_merge_paired_end_cleaned = Channel.empty()
 	merge_paired_end_cleaned_log = Channel.empty()
 } else if (!params.singleEnd) {
-	Channel
-		.from([[params.prefix, [file(params.reads1), file(params.reads2)]]] )
-		.set { reads_merge_paired_end_cleaned }
-	
+	reads_merge_paired_end_cleaned = Channel
+		.fromList([[params.prefix, [params.reads1, params.reads2]]] )
+
 	//Stage boilerplate log
-	merge_paired_end_cleaned_log = Channel.from(file("$baseDir/assets/merge_paired_end_cleaned_mqc.yaml"))
+	merge_paired_end_cleaned_log = Channel.fromPath("$projectDir/assets/merge_paired_end_cleaned_mqc.yaml")
 
 	//Initialise empty channels
-	to_profile_taxa = Channel.empty()
-	to_profile_functions = Channel.empty()
-} 
+	to_profile_taxa_functions = Channel.empty()
+}
 
 
 if (params.rna){
-	Channel
-		.from([[params.prefix, file(params.taxonomic_profile)]])
-		.set{ custom_taxa_profile }
+	custom_taxa_profile = Channel
+		.fromList([[params.prefix, params.taxonomic_profile]])
 }
 else{
 	custom_taxa_profile = Channel.empty()
 }
 
-process merge_paired_end_cleaned {
 
-	tag "$name"
-	container params.docker_container_bbmap
-		
-	input:
-	tuple val(name), file(reads) from reads_merge_paired_end_cleaned
-	
-	output:
-	tuple val(name), path("*_QCd.fq.gz") into to_profile_taxa_merged
-	tuple val(name), path("*_QCd.fq.gz") into to_profile_functions_merged
-	
-	when:
-	!params.singleEnd
 
-   	script:
-	"""
-	# This step will have no logging because the information are not relevant
-	# I will simply use a boilerplate YAML to record that this has happened
-	# If the files were not compressed, they will be at this stage
-	
-	#Sets the maximum memory to the value requested in the config file
-    maxmem=\$(echo \"$task.memory\" | sed 's/ //g' | sed 's/B//g')
+workflow {
 
-	reformat.sh -Xmx\"\$maxmem\" in1=${reads[0]} in2=${reads[1]} out=${name}_QCd.fq.gz threads=${task.cpus}
-	"""
+	//Channel.of(1) |
+	get_software_versions()
+
+	//workflow_summary = create_workflow_summary(summary)
+
+  reads_merge_paired_end_cleaned | merge_paired_end_cleaned
+
+  to_profile_taxa_functions.mix(merge_paired_end_cleaned.out.to_profile_taxa_merged) | profile_taxa
+
+	profile_function_ch1 = to_profile_taxa_functions.mix(merge_paired_end_cleaned.out.to_profile_functions_merged)
+
+	profile_function_ch2 = profile_taxa.out.to_profile_function_bugs.mix(custom_taxa_profile)
+
+  profile_function(profile_function_ch1, profile_function_ch2)
+
+  alpha_diversity(profile_taxa.out.to_alpha_diversity)
+	// Stage config files
+
 }
 
-/**
-	Community Characterisation - STEP 1. Performs taxonomic binning and estimates the 
-	microbial relative abundances using MetaPhlAn and its databases of clade-specific markers.
+/*
+multiqc_config = file(params.multiqc_config)
+
+log( multiqc_config,
+		//workflow_summary,
+		get_software_versions.out.software_versions_yaml,
+		merge_paired_end_cleaned_log.ifEmpty([]),
+		profile_taxa.out.profile_taxa_log.ifEmpty([]),
+		profile_function.out.profile_function_log.ifEmpty([]),
+		alpha_diversity.out.alpha_diversity_log.ifEmpty([])
+	)
 */
-
-
-// Defines channels for bowtie2_metaphlan_databases file 
-// Channel.fromPath( params.metaphlan_databases, type: 'dir', checkIfExists: true ).set { bowtie2_metaphlan_databases }
-
-process profile_taxa {
-
-    tag "$name"
-
-	//Enable multicontainer settings
-    container params.docker_container_biobakery
-
-	publishDir "${workingpath}/${params.prefix}/taxa", mode: 'copy', pattern: "*.{biom,tsv,txt}"
-	
-	input:
-	tuple val(name), file(reads) from to_profile_taxa.mix(to_profile_taxa_merged)
-	
-	output:
-	tuple val(name), path("*.biom") into to_alpha_diversity
-	tuple val(name), path("*_metaphlan_bugs_list.tsv") into to_profile_function_bugs
-	file "profile_taxa_mqc.yaml" into profile_taxa_log
-
-	when:
-	!params.rna
-	
-	script:
-	"""
-	metaphlan \\
-		--input_type fastq \\
-		--tmp_dir . \\
-		--biom ${name}.biom \\
-		--index ${params.metaphlan_index} \\
-		--bowtie2db ${params.metaphlan_db} \\
-		--bowtie2out ${name}.bowtie2out.txt \\
-		--bt2_ps ${params.bt2options} \\
-		--add_viruses \\
-		--sample_id ${name} \\
-		--nproc ${task.cpus} \\
-		--unclassified_estimation \\
-		$reads \\
-		${name}_metaphlan_bugs_list.tsv 1> profile_taxa_mqc.txt
-	
-	# MultiQC doesn't have a module for Metaphlan yet. As a consequence, I
-	# had to create a YAML file with all the info I need via a bash script
-	bash scrape_profile_taxa_log.sh ${name}_metaphlan_bugs_list.tsv > profile_taxa_mqc.yaml
-	"""
-}
-
-
-/**
-	Community Characterisation - STEP 2. Performs the functional annotation using HUMAnN.
-*/
-
-// Defines channels for bowtie2_metaphlan_databases file 
-// Channel.fromPath( params.chocophlan, type: 'dir', checkIfExists: true ).set { chocophlan_databases }
-// Channel.fromPath( params.uniref, type: 'dir', checkIfExists: true ).set { uniref_databases }
-
-process profile_function {
-	
-    tag "$name"
-
-	//Enable multicontainer settings
-    container params.docker_container_biobakery
-
-	publishDir {params.rna ? "${workingpath}/${params.prefix}/function/metaT" : "${workingpath}/${params.prefix}/function/metaG" }, mode: 'copy', pattern: "*.{tsv,log}"
-	
-	input:
-	tuple val(name), file(reads) from to_profile_functions.mix(to_profile_functions_merged)
-	tuple val(name), file(metaphlan_bug_list) from to_profile_function_bugs.mix(custom_taxa_profile)
-	
-    output:
-	file "*_HUMAnN.log"
-	file "*_genefamilies.tsv"
-	file "*_pathcoverage.tsv"
-	file "*_pathabundance.tsv"
-	file "profile_functions_mqc.yaml" into profile_functions_log
-
-	script:
-	"""
-	head -n 3 ${metaphlan_bug_list}
-	ls -lhtr ${metaphlan_bug_list}
-	#HUMAnN will use the list of species detected by the profile_taxa process
-	humann \\
-		--input $reads \\
-		--output . \\
-		--output-basename ${name} \\
-		--taxonomic-profile ${metaphlan_bug_list} \\
-		--nucleotide-database ${params.chocophlan} \\
-		--protein-database ${params.uniref} \\
-		--pathways metacyc \\
-		--threads ${task.cpus} \\
-		--memory-use minimum &> ${name}_HUMAnN.log 
-	
-	# MultiQC doesn't have a module for humann yet. As a consequence, I
-	# had to create a YAML file with all the info I need via a bash script
-	bash scrape_profile_functions.sh ${name} ${name}_HUMAnN.log > profile_functions_mqc.yaml
- 	"""
-}
-
-
-/**
-	Community Characterisation - STEP 3. Evaluates several alpha-diversity measures. 
-
-*/
-
-process alpha_diversity {
-
-    tag "$name"
-
-	container params.docker_container_qiime2
-
-	publishDir "${workingpath}/${params.prefix}/alpha_diversity", mode: 'copy', pattern: "*.{tsv}"
-	
-	input:
-	tuple val(name), file(metaphlan_bug_list) from to_alpha_diversity
-		
-    output:
-	file "*_alpha_diversity.tsv"
-	file "alpha_diversity_mqc.yaml" into alpha_diversity_log
-
-	when:
-	!params.rna
-
-	script:
-	"""
-	#It checks if the profiling was successful, that is if identifies at least three species
-	n=\$(grep -o s__ $metaphlan_bug_list | wc -l  | cut -d\" \" -f 1)
-	if (( n <= 3 )); then
-		#The file should be created in order to be returned
-		touch ${name}_alpha_diversity.tsv 
-	else
-		echo $name > ${name}_alpha_diversity.tsv
-		qiime tools import --input-path $metaphlan_bug_list --type 'FeatureTable[Frequency]' --input-format BIOMV100Format --output-path ${name}_abundance_table.qza
-		for alpha in ace berger_parker_d brillouin_d chao1 chao1_ci dominance doubles enspie esty_ci fisher_alpha gini_index goods_coverage heip_e kempton_taylor_q lladser_pe margalef mcintosh_d mcintosh_e menhinick michaelis_menten_fit osd pielou_e robbins shannon simpson simpson_e singles strong
-		do
-			qiime diversity alpha --i-table ${name}_abundance_table.qza --p-metric \$alpha --output-dir \$alpha &> /dev/null
-			qiime tools export --input-path \$alpha/alpha_diversity.qza --output-path \${alpha} &> /dev/null
-			value=\$(sed -n '2p' \${alpha}/alpha-diversity.tsv | cut -f 2)
-		    echo -e  \$alpha'\t'\$value 
-		done >> ${name}_alpha_diversity.tsv  
-	fi
-
-	# MultiQC doesn't have a module for qiime yet. As a consequence, I
-	# had to create a YAML file with all the info I need via a bash script
-	bash generate_alpha_diversity_log.sh \${n} > alpha_diversity_mqc.yaml	
-	"""
-}
-
-
-// ------------------------------------------------------------------------------   
-//	MULTIQC LOGGING
-// ------------------------------------------------------------------------------   
-
-
-/**
-	Generate Logs. 
-
-	Logs generate at each analysis step are collected and processed with MultiQC 
-*/
-
-// Stage config files
-Channel
-	.fromPath(params.multiqc_config)
-	.set {multiqc_config_ch}
-
-process log {
-	
-	publishDir "${workingpath}/${params.prefix}/log", mode: 'copy'
-
-    container params.docker_container_multiqc
-
-	input:
-	file multiqc_config from multiqc_config_ch
-	file workflow_summary from create_workflow_summary(summary)
-	file "software_versions_mqc.yaml" from software_versions_yaml
-	file "merge_paired_end_cleaned_mqc.yaml" from merge_paired_end_cleaned_log.ifEmpty([])
-	file "profile_taxa_mqc.yaml" from profile_taxa_log.ifEmpty([])
-	file "profile_functions_mqc.yaml" from profile_functions_log.ifEmpty([])
-	file "alpha_diversity_mqc.yaml" from alpha_diversity_log.ifEmpty([])
-	
-	output:
-	path "${params.prefix}_multiqc_report.html" into multiqc_report
-	path "${params.prefix}_multiqc_data"
-
-	script:
-	"""
-	multiqc --config $multiqc_config . -f
-	mv multiqc_report.html ${params.prefix}_multiqc_report.html
-	mv multiqc_data ${params.prefix}_multiqc_data
-	"""
-}
-
-
