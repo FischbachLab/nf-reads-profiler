@@ -5,7 +5,7 @@ REGISTRY=458432034220.dkr.ecr.us-west-2.amazonaws.com/$(NAME)
 all: build push run
 
 build:
-	docker image build -t $(NAME):$(TAG) --no-cache --pull -f Dockerfile .
+	docker image build --ulimit nofile=262144:262144 -t $(NAME):$(TAG) --no-cache --pull -f Dockerfile .
 	docker image tag $(NAME):$(TAG) $(REGISTRY):$(TAG)
 	docker image tag $(NAME):$(TAG) $(REGISTRY):latest
 
