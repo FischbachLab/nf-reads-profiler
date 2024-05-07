@@ -20,7 +20,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     procps &&\
     apt-get autoclean && rm -rf /var/lib/apt/lists/*
 
-RUN micromamba install --name base -c conda-forge -c bioconda metaphlan=${METAPHLAN_VER} &&\
+RUN micromamba install --name base -c conda-forge -c bioconda -y metaphlan=${METAPHLAN_VER} &&\
     micromamba clean -a -y
 
 ENV PATH="/opt/conda/bin/:${PATH}" \
