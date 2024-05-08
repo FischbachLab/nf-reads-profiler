@@ -33,12 +33,12 @@ Although the databases have been stored at the appropriate `/mnt/efs/databases` 
 ### Metaphlan4
 
 ```{bash}
-cd /mnt/efs/databases/Biobakery/Metaphlan/v4.0
+cd /mnt/efs/databases/Biobakery/Metaphlan/v4.1.0
 docker container run \
     --volume $PWD:$PWD \
     --workdir $PWD \
     --rm \
-    458432034220.dkr.ecr.us-west-2.amazonaws.com/biobakery/workflows:maf-20221028-a1 \
+    458432034220.dkr.ecr.us-west-2.amazonaws.com/metaphlan:4.1.0 \
     metaphlan \
         --install \
         --nproc 4 \
