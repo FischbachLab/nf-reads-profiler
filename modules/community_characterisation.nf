@@ -45,6 +45,7 @@ process profile_taxa {
 		--sample_id ${name} \\
 		--nproc ${task.cpus} \\
 		--unclassified_estimation \\
+		--offline \\
 		-s ${name}.sam.bz2 \\
 		$reads \\
 		${name}_metaphlan_bugs_list.tsv 1> profile_taxa_mqc.txt
