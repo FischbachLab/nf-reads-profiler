@@ -8,12 +8,11 @@ This pipeline is based on the original [YAMP](https://github.com/alesssia/YAMP) 
 
 ```{bash}
 aws batch submit-job \
-    --profile maf \
-    --job-name nf-rp-1101-2 \
+    --job-name nf-rp-mp410-1 \
     --job-queue priority-maf-pipelines \
     --job-definition nextflow-production \
     --container-overrides command=fischbachlab/nf-reads-profiler,\
-"--prefix","branch_metaphlan4",\
+"--prefix","mp4_1_0",\
 "--singleEnd","false",\
 "--reads1","s3://dev-scratch/fastq/small/random_ncbi_reads_with_duplicated_and_contaminants_R1.fastq.gz",\
 "--reads2","s3://dev-scratch/fastq/small/random_ncbi_reads_with_duplicated_and_contaminants_R2.fastq.gz"
