@@ -63,7 +63,7 @@ Alistipes_communis	1.2718188067117246	5.0323360110009645
 
 <!-- -->
 - Optionally, a taxon-by-sample heatmap is created in the folder merged_metaphlan_results/ too if there are enough species detected across samples.
-![An example heatmap](assets/images/example-heatmap.png)
+![An example heatmap](assets/images/example-heatmap.png =200x300)
 
 ### Cross account test
 
