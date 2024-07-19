@@ -17,7 +17,7 @@ process profile_taxa {
 	//Enable multicontainer settings
   container params.docker_container_metaphlan
 
-	publishDir "${params.outdir}/${params.project}/${params.prefix}/taxa", mode: 'copy', pattern: "*.{biom,tsv,txt,bz2}"
+	publishDir "${params.outdir}/${params.project}/${name}/taxa", mode: 'copy', pattern: "*.{biom,tsv,txt,bz2}"
 
 	input:
 	tuple val(name), path(reads)
@@ -25,6 +25,7 @@ process profile_taxa {
 	output:
 	tuple val(name), path("*.biom"), emit: to_alpha_diversity
 	tuple val(name), path("*_metaphlan_bugs_list.tsv"), emit: to_profile_function_bugs
+	path "*_metaphlan_bugs_list.tsv", emit: to_profile_function_bugs_list
 	path "profile_taxa_mqc.yaml", emit: profile_taxa_log
 	path "*.bz2"
 
@@ -72,7 +73,7 @@ process profile_function {
 	//Enable multicontainer settings
   container params.docker_container_biobakery
 
-	publishDir {params.rna ? "${params.outdir}/${params.project}/${params.prefix}/function/metaT" : "${params.outdir}/${params.project}/${params.prefix}/function/metaG" }, mode: 'copy', pattern: "*.{tsv,log}"
+	publishDir {params.rna ? "${params.outdir}/${params.project}/${name}/function/metaT" : "${params.outdir}/${params.project}/${name}/function/metaG" }, mode: 'copy', pattern: "*.{tsv,log}"
 
 	input:
 	tuple val(name), path(reads)
@@ -122,7 +123,7 @@ process alpha_diversity {
 
 	container params.docker_container_qiime2
 
-	publishDir "${params.outdir}/${params.project}/${params.prefix}/alpha_diversity", mode: 'copy', pattern: "*.{tsv}"
+	publishDir "${params.outdir}/${params.project}/${name}/alpha_diversity", mode: 'copy', pattern: "*.{tsv}"
 
 	input:
 	tuple val(name), path(metaphlan_bug_list)
@@ -157,4 +158,54 @@ process alpha_diversity {
 	# had to create a YAML file with all the info I need via a bash script
 	bash generate_alpha_diversity_log.sh \${n} > alpha_diversity_mqc.yaml
 	"""
+}
+
+/*
+ merge the bug list tables by samples
+ generate the species only heatmap if there are enough species to display
+*/
+process merge_mp_results {
+
+	tag params.project
+
+	errorStrategy = 'ignore'
+
+    container params.docker_container_biobakery  
+    publishDir "${params.outdir}/${params.project}/merged_metaphlan_results/"
+
+    input:
+      path "metaphlan_bugs_list/*"
+
+    output:
+	  path "merged_metaphlan_abundance_species.tsv"
+      path "metaphlan_abundance_heatmap_species.png", optional: true
+
+  script:
+  """
+    ls -lhtr metaphlan_bugs_list
+	merge_bug_list.sh metaphlan_bugs_list
+
+	if [[ -f merged_metaphlan_abundance_species.tsv &&  $(wc -l merged_metaphlan_abundance_species.tsv) -gt 6 ]];
+	then 
+		hclust2.py \
+		-i merged_metaphlan_abundance_species.tsv \
+		-o metaphlan_abundance_heatmap_species.png \
+		--skip_rows 1 \
+		--ftop 30 \
+		--f_dist_f correlation \
+		--s_dist_f braycurtis \
+		--cell_aspect_ratio 1 \
+		--log_scale \
+		--flabel_size 4 \
+		--slabel_size 4 \
+		--max_flabel_len 30 \
+		--max_slabel_len 30 \
+		--metadata_height 0.1 \
+		--metadata_separation 0.01 \
+		--minv 0.01 \
+		--dpi 600 \
+		--colorbar_font_size 6 \
+		--title ${params.project}
+	fi
+  """
 }

@@ -2,7 +2,7 @@
 
 nextflow.enable.dsl=2
 
-include { profile_taxa; profile_function; alpha_diversity } from './modules/community_characterisation'
+include { profile_taxa; profile_function; alpha_diversity; merge_mp_results} from './modules/community_characterisation'
 include { merge_paired_end_cleaned; get_software_versions; log } from './modules/house_keeping'
 
 def versionMessage()
@@ -22,6 +22,7 @@ nf-reads-profiler - Version: ${workflow.manifest.version}
   Mandatory arguments:
     --reads1   R1      Forward (if paired-end) OR all reads (if single-end) path path
     [--reads2] R2      Reverse reads file path (only if paired-end library layout)
+	--seedfile file    A file contains sample name, reads1 and reads2
     --prefix   prefix  Prefix used to name the result files
     --outdir   path    Output directory (will be outdir/prefix/)
 
@@ -37,7 +38,7 @@ nf-reads-profiler - Version: ${workflow.manifest.version}
     --taxonomic_profile	  path	  s3path to precalculate metaphlan3 taxonomic profile output.
     --chocophlan          path    folder for the ChocoPhlAn database
     --uniref              path	  folder for the UniRef database
-		--annotation  <true|false>   whether annotation is enabled (default: false)
+	--annotation  <true|false>   whether annotation is enabled (default: false)
 
 nf-reads-profiler supports FASTQ and compressed FASTQ files.
 """
@@ -58,6 +59,10 @@ Prints help when asked for
 if (params.help) {
 	helpMessage()
 	exit 0
+}
+// either a seedfile or a read file path
+if ((!params.seedfile == "null") && (!params.reads1 == "null") ) {
+	exit 1, "please use either the seedfile or reads1 path option, not both"
 }
 
 //--reads2 can be omitted when the library layout is "single" (indeed it specifies single-end
@@ -186,27 +191,48 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd>$v</dd>" }.join("\n")}
 // In the latter case, the user will set singleEnd = false and provide two files, that will
 // be merged before feeding the relevant channels for profiling.
 if (params.singleEnd) {
-	to_profile_taxa_functions = Channel
-		.fromList([[params.prefix, [params.reads1]]])
 
-	//Initialise empty channels
-	reads_merge_paired_end_cleaned = Channel.empty()
-	merge_paired_end_cleaned_log = Channel.empty()
-} else if (!params.singleEnd) {
-	reads_merge_paired_end_cleaned = Channel
-		.fromList([[params.prefix, [params.reads1, params.reads2]]] )
+		seedfile_ch = Channel
+			.fromPath(params.seedfile)
+			.ifEmpty { exit 1, "Cannot find any seed file matching: ${params.seedfile}" }
+			.splitCsv(header: ['prefix', 'reads1'], sep: ',', skip: 1)
+			.map{ row -> tuple([row.prefix, [row.reads1]])}
 
-	//Stage boilerplate log
-	merge_paired_end_cleaned_log = Channel.fromPath("$projectDir/assets/merge_paired_end_cleaned_mqc.yaml")
+		to_profile_taxa_functions = seedfile_ch
+		//Channel
+		//	.fromList([[params.prefix, [params.reads1]]])
 
-	//Initialise empty channels
-	to_profile_taxa_functions = Channel.empty()
+		//Initialise empty channels
+		reads_merge_paired_end_cleaned = Channel.empty()
+		merge_paired_end_cleaned_log = Channel.empty()
+	} else if (!params.singleEnd) {
+
+		 seedfile_ch = Channel
+			.fromPath(params.seedfile)
+			.ifEmpty { exit 1, "Cannot find any seed file matching: ${params.seedfile}" }
+			.splitCsv(header: ['prefix', 'reads1', 'reads2'], sep: ',', skip: 1)
+			.map{ row -> tuple([row.prefix, [row.reads1, row.reads2]]) }
+
+		reads_merge_paired_end_cleaned = seedfile_ch 
+		//Channel
+		//	.fromList([[params.prefix, [params.reads1, params.reads2]]] )
+
+		//Stage boilerplate log
+		merge_paired_end_cleaned_log = Channel.fromPath("$projectDir/assets/merge_paired_end_cleaned_mqc.yaml")
+
+		//Initialise empty channels
+		to_profile_taxa_functions = Channel.empty()
 }
 
 
 if (params.rna){
 	custom_taxa_profile = Channel
-		.fromList([[params.prefix, params.taxonomic_profile]])
+			.fromPath(params.seedfile)
+			.ifEmpty { exit 1, "Cannot find any seed file matching: ${params.seedfile}" }
+			.splitCsv(header: ['prefix', 'reads1', 'reads2'], sep: ',', skip: 1)
+			.map{ row -> tuple([row.prefix, params.taxonomic_profile])}
+
+//		.fromList([[params.prefix, params.taxonomic_profile]])
 }
 else{
 	custom_taxa_profile = Channel.empty()
@@ -221,21 +247,26 @@ workflow {
 
 	//workflow_summary = create_workflow_summary(summary)
 
-  reads_merge_paired_end_cleaned | merge_paired_end_cleaned
+	reads_merge_paired_end_cleaned | merge_paired_end_cleaned
 
-  to_profile_taxa_functions.mix(merge_paired_end_cleaned.out.to_profile_taxa_merged) | profile_taxa
+	to_profile_taxa_functions.mix(merge_paired_end_cleaned.out.to_profile_taxa_merged) | profile_taxa
 
 	profile_function_ch1 = to_profile_taxa_functions.mix(merge_paired_end_cleaned.out.to_profile_functions_merged)
 
 	profile_function_ch2 = profile_taxa.out.to_profile_function_bugs.mix(custom_taxa_profile)
 
-  profile_function(profile_function_ch1, profile_function_ch2)
+	profile_function(profile_function_ch1, profile_function_ch2)
 
-  alpha_diversity(profile_taxa.out.to_alpha_diversity)
-	// Stage config files
+	alpha_diversity(profile_taxa.out.to_alpha_diversity)
+
+	merge_mp_results( profile_taxa.out.to_profile_function_bugs_list.toSortedList())
 
 }
 
+/*
+*/
+
+// Stage config files
 /*
 multiqc_config = file(params.multiqc_config)
 
