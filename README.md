@@ -12,10 +12,10 @@ aws batch submit-job \
    --job-name nf-readprofiler_20240709_DS-mNGS \
    --job-queue priority-maf-pipelines  \
    --job-definition nextflow-production \
-   --container-overrides command="s3://nextflow-pipelines/nf-reads-profiler, \ 
+   --container-overrides command="FischbachLab/nf-reads-profiler, \ 
 "--project","20240709_DS-mNGS", \
 "--singleEnd","false",  \
-"--seedfile","s3://genomics-workflow-core/Results/reads-profiler/seedfiles/20240709_DS-mNGS.seedfile.csv" \
+"--seedfile","s3://genomics-workflow-core/Results/reads-profiler/seedfiles/20240709_DS-mNGS.seedfile.csv", \
 "--outdir","s3://genomics-workflow-core/Results/reads-profiler" "
 ```
 
