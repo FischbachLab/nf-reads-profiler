@@ -257,8 +257,9 @@ workflow {
 
 	profile_function(profile_function_ch1, profile_function_ch2)
 
-	alpha_diversity(profile_taxa.out.to_alpha_diversity)
-
+    if (params.alpha){
+	    alpha_diversity(profile_taxa.out.to_alpha_diversity)
+	}
 	merge_mp_results( profile_taxa.out.to_profile_function_bugs_list.toSortedList())
 
 }

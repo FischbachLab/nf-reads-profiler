@@ -61,9 +61,9 @@ Prevotella_bivia	1.2946871089871548	0.0
 Alistipes_communis	1.2718188067117246	5.0323360110009645
 ```
 
-<!--![An example heatmap](assets/images/example-heatmap.png) -->
+<!--![An example heatmap](assets/images/example-heatmap.png) 
 - Optionally, a taxon-by-sample heatmap is created in the folder merged_metaphlan_results/ too if there are enough species detected across samples.
-<img src="assets/images/example-heatmap.png" width="200" height="300" />
+<img src="assets/images/example-heatmap.png" width="200" height="300" /-->
 
 
 ### Cross account test
