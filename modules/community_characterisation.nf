@@ -168,14 +168,16 @@ process merge_mp_results {
 
 	tag params.project
 
-    container params.docker_container_biobakery  
+	errorStrategy = 'ignore'
+
+    container params.docker_container_datamash 
     publishDir "${params.outdir}/${params.project}/merged_metaphlan_results/"
 
     input:
       path "metaphlan_bugs_list/*"
 
     output:
-	  path "merged_metaphlan_abundance_species.tsv"
+	  path "*merged_metaphlan_abundance_*.tsv"
       path "metaphlan_abundance_heatmap_species.png", optional: true
 
   script:
@@ -186,21 +188,9 @@ process merge_mp_results {
 	
   """
 }
-
-
-/*    species_count=1 
-	echo ${species_count}
-	ls -lhtr metaphlan_bugs_list
-
-	merge_bug_list.sh metaphlan_bugs_list
-
-	if[ -f merged_metaphlan_abundance_species.tsv ];
-	 then
-		species_count=\$(wc -l merged_metaphlan_abundance_species.tsv)
-	fi
-
-    if [ ${species_count} -gt 7 ];
-	then
+/*
+if [[ -f merged_metaphlan_abundance_species.tsv &&  $(wc -l merged_metaphlan_abundance_species.tsv) -gt 6 ]];
+	then 
 		hclust2.py \
 		-i merged_metaphlan_abundance_species.tsv \
 		-o metaphlan_abundance_heatmap_species.png \
@@ -220,35 +210,5 @@ process merge_mp_results {
 		--dpi 600 \
 		--colorbar_font_size 6 \
 		--title ${params.project}
-	fi
-	*/
-/*
-	species_count=0
-	if[ -f merged_metaphlan_abundance_species.tsv ];
-	 then
-		species_count=\$(wc -l merged_metaphlan_abundance_species.tsv)
-
-		if [ ${species_count} -gt 6 ];
-		then
-			hclust2.py \
-			-i merged_metaphlan_abundance_species.tsv \
-			-o metaphlan_abundance_heatmap_species.png \
-			--skip_rows 1 \
-			--ftop 30 \
-			--f_dist_f correlation \
-			--s_dist_f braycurtis \
-			--cell_aspect_ratio 1 \
-			--log_scale \
-			--flabel_size 4 \
-			--slabel_size 4 \
-			--max_flabel_len 30 \
-			--max_slabel_len 30 \
-			--metadata_height 0.1 \
-			--metadata_separation 0.01 \
-			--minv 0.01 \
-			--dpi 600 \
-			--colorbar_font_size 6 \
-			--title ${params.project}
-		fi
 	fi
 	*/
