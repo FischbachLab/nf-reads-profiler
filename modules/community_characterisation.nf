@@ -170,15 +170,15 @@ process merge_mp_results {
 
 	errorStrategy = 'ignore'
 
-    container params.docker_container_datamash 
+    container params.docker_container_biobakery 
     publishDir "${params.outdir}/${params.project}/merged_metaphlan_results/"
 
     input:
       path "metaphlan_bugs_list/*"
 
     output:
-	  path "*merged_metaphlan_abundance_*.tsv"
-      path "metaphlan_abundance_heatmap_species.png", optional: true
+	  path "merged_metaphlan_abundance_species.tsv", emit: samples
+	  path "full_taxonomy_merged_metaphlan_abundance_species.tsv"
 
   script:
   """
@@ -187,3 +187,28 @@ process merge_mp_results {
 
   """
 }
+
+
+process sample_mp_results {
+
+	tag params.project
+
+	errorStrategy = 'ignore'
+
+    container params.docker_container_datamash 
+    publishDir "${params.outdir}/${params.project}/merged_metaphlan_results/"
+
+    input:
+      path "merged_metaphlan_abundance_species.tsv"
+
+    output:
+	  path "merged_metaphlan_abundance_samples.tsv"
+
+  script:
+  """
+	datamash transpose -H < merged_metaphlan_abundance_species.tsv > merged_metaphlan_abundance_samples.tsv
+	sed -i '1s/^/sample_name/' merged_metaphlan_abundance_samples.tsv
+
+  """
+}
+
