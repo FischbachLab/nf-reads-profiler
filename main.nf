@@ -262,7 +262,7 @@ workflow {
 	}
 	merge_mp_results( profile_taxa.out.to_profile_function_bugs_list.toSortedList())
 
-	sample_mp_results( merge_mp_results.to.samples )
+	sample_mp_results( merge_mp_results.out.samples )
 }
 
 /*
