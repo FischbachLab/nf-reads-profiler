@@ -2,7 +2,7 @@
 
 nextflow.enable.dsl=2
 
-include { profile_taxa; profile_function; alpha_diversity; merge_mp_results} from './modules/community_characterisation'
+include { profile_taxa; profile_function; alpha_diversity; merge_mp_results; sample_mp_results} from './modules/community_characterisation'
 include { merge_paired_end_cleaned; get_software_versions; log } from './modules/house_keeping'
 
 def versionMessage()
@@ -261,7 +261,7 @@ workflow {
 	    alpha_diversity(profile_taxa.out.to_alpha_diversity)
 	}
 	merge_mp_results( profile_taxa.out.to_profile_function_bugs_list.toSortedList())
-	
+
 	sample_mp_results( merge_mp_results.to.samples )
 }
 
