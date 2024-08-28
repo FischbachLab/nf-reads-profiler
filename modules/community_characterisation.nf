@@ -179,11 +179,14 @@ process merge_mp_results {
     output:
 	  path "merged_metaphlan_abundance_species.tsv", emit: samples
 	  path "full_taxonomy_merged_metaphlan_abundance_species.tsv"
+	  path "merged_metaphlan_species_prevalence.tsv"
 
   script:
   """
     ls -lhtr metaphlan_bugs_list
 	merge_bug_list.sh metaphlan_bugs_list
+
+	calculate_prevalene.R merged_metaphlan_abundance_species.tsv
 
   """
 }
