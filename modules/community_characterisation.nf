@@ -186,7 +186,7 @@ process merge_mp_results {
     ls -lhtr metaphlan_bugs_list
 	merge_bug_list.sh metaphlan_bugs_list
 
-	calculate_prevalene.R merged_metaphlan_abundance_species.tsv
+	calculate_prevalence.R merged_metaphlan_abundance_species.tsv
 
   """
 }
