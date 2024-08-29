@@ -170,7 +170,7 @@ process merge_mp_results {
 
 	errorStrategy = 'ignore'
 
-    container params.docker_container_biobakery 
+    container params.docker_container_sanger
     publishDir "${params.outdir}/${params.project}/merged_metaphlan_results/"
 
     input:
