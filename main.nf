@@ -261,7 +261,7 @@ workflow {
 	    alpha_diversity(profile_taxa.out.to_alpha_diversity)
 	}
 	merge_mp_results( profile_taxa.out.to_profile_function_bugs_list.toSortedList())
-
+    prevalence_mp_results( merge_mp_results.out.samples )
 	sample_mp_results( merge_mp_results.out.samples )
 }
 

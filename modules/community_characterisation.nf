@@ -179,13 +179,33 @@ process merge_mp_results {
     output:
 	  path "merged_metaphlan_abundance_species.tsv", emit: samples
 	  path "full_taxonomy_merged_metaphlan_abundance_species.tsv"
-	  path "merged_metaphlan_species_prevalence.tsv"
 
   script:
   """
     ls -lhtr metaphlan_bugs_list
 	merge_bug_list.sh metaphlan_bugs_list
 
+  """
+}
+
+/* calculate prevalence */
+process prevalence_mp_results {
+
+	tag params.project
+
+	errorStrategy = 'ignore'
+
+    container params.docker_container_sanger
+    publishDir "${params.outdir}/${params.project}/merged_metaphlan_results/"
+
+    input:
+      path "merged_metaphlan_abundance_species.tsv"
+
+    output:
+	  path "merged_metaphlan_species_prevalence.tsv"
+
+  script:
+  """
 	calculate_prevalence.R merged_metaphlan_abundance_species.tsv
 
   """
