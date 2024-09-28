@@ -188,30 +188,10 @@ process merge_mp_results {
   """
 }
 
-/* calculate prevalence */
-process prevalence_mp_results {
-
-	tag params.project
-
-	errorStrategy = 'ignore'
-
-    container params.docker_container_sanger
-    publishDir "${params.outdir}/${params.project}/merged_metaphlan_results/"
-
-    input:
-      path "merged_metaphlan_abundance_species.tsv"
-
-    output:
-	  path "merged_metaphlan_species_prevalence.tsv"
-
-  script:
-  """
-	calculate_prevalence.R merged_metaphlan_abundance_species.tsv
-
-  """
-}
 
 
+/*	sed -i 's/^clade_name/sample_name/' merged_metaphlan_abundance_samples.tsv
+*/
 process sample_mp_results {
 
 	tag params.project
@@ -225,13 +205,34 @@ process sample_mp_results {
       path "merged_metaphlan_abundance_species.tsv"
 
     output:
-	  path "merged_metaphlan_abundance_samples.tsv"
+	  path "merged_metaphlan_abundance_samples.tsv", emit: samples
 
   script:
   """
 	datamash transpose -H < merged_metaphlan_abundance_species.tsv > merged_metaphlan_abundance_samples.tsv
-	sed -i '1s/^/sample_name/' merged_metaphlan_abundance_samples.tsv
-
   """
 }
 
+/* calculate prevalence */
+process prevalence_mp_results {
+
+	tag params.project
+
+	errorStrategy = 'ignore'
+
+    container params.docker_container_sanger
+    publishDir "${params.outdir}/${params.project}/merged_metaphlan_results/"
+
+    input:
+      path "merged_metaphlan_abundance_samples.tsv"
+
+    output:
+	  path "merged_metaphlan_species_prevalence.tsv"
+
+  script:
+  """
+	calculate_prevalence.R merged_metaphlan_abundance_samples.tsv
+	sed -i 's/sample_name/species/' merged_metaphlan_species_prevalence.tsv
+
+  """
+}

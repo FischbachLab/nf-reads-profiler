@@ -15,13 +15,13 @@ df = read_tsv(input_path, col_names = TRUE)
 
 #print(df)
 #gather all columns except the first one
-df <- gather(df, key="sample_name", value="relative_abundance", -species_name) %>%
+df <- gather(df, key="sample_name", value="relative_abundance", -sample_name) %>%
       filter( relative_abundance > 0)
 
-prevalence_df <-group_by(df, species_name) %>%
+prevalence_df <-group_by(df, sample_name) %>%
   summarize( prevalence = n(),
              mean_abundance = mean(relative_abundance),
              median_abundance = median(relative_abundance)
            ) 
 
-write_tsv(prevalence_df , "merged_metaphlan_species_prevalence.tsv")
+write_tsv(prevalence_df, "merged_metaphlan_species_prevalence.tsv")
