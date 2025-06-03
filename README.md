@@ -25,8 +25,8 @@ aws batch submit-job \
 
 ```{bash}
 sampleName,R1,R2
-20240614_DS037_D01_R1.fastq.gz,s3://genomics-workflow-core/Results/Basespace/NextSeq/20240709_DS-mNGS_HKT5LBGXW/20240614_DS037_D01_R1.fastq.gz_R1_001.fastq.gz,s3://genomics-workflow-core/Results/Basespace/NextSeq/20240709_DS-mNGS_HKT5LBGXW/20240614_DS037_D01_R1.fastq.gz_R2_001.fastq.gz
-20240614_DS038_E01_R1.fastq.gz,s3://genomics-workflow-core/Results/Basespace/NextSeq/20240709_DS-mNGS_HKT5LBGXW/20240614_DS038_E01_R1.fastq.gz_R1_001.fastq.gz,s3://genomics-workflow-core/Results/Basespace/NextSeq/20240709_DS-mNGS_HKT5LBGXW/20240614_DS038_E01_R1.fastq.gz_R2_001.fastq.gz
+20240614_DS037_D01,s3://genomics-workflow-core/Results/Basespace/NextSeq/20240709_DS-mNGS_HKT5LBGXW/20240614_DS037_D01_R1.fastq.gz_R1_001.fastq.gz,s3://genomics-workflow-core/Results/Basespace/NextSeq/20240709_DS-mNGS_HKT5LBGXW/20240614_DS037_D01_R1.fastq.gz_R2_001.fastq.gz
+20240614_DS038_E01,s3://genomics-workflow-core/Results/Basespace/NextSeq/20240709_DS-mNGS_HKT5LBGXW/20240614_DS038_E01_R1.fastq.gz_R1_001.fastq.gz,s3://genomics-workflow-core/Results/Basespace/NextSeq/20240709_DS-mNGS_HKT5LBGXW/20240614_DS038_E01_R1.fastq.gz_R2_001.fastq.gz
 ```
 
 ### Example2: --reads1 and --reads2 flags for paired end sample
@@ -46,7 +46,7 @@ aws batch submit-job \
 
 ### Outputs
 
-- The final output is a single tab-delimited table from a set of sample-specific abundance profiles (the sample names, feature taxonomies, and relative abundances) in the folder, e.g., s3://genomics-workflow-core/Results/reads-profiler/20240709_DS-mNGS/merged_metaphlan_results/
+- The final output is a single tab-delimited table from a set of sample-specific abundance profiles (the sample names, feature taxonomies, and relative abundances) in the folder, e.g., `s3://genomics-workflow-core/Results/reads-profiler/20240709_DS-mNGS/merged_metaphlan_results/`
 
 ```{bash}
 	20240614_LKV_AK12_DC_240604_C05	20240614_LKV_AK22_DC_240604_C06
