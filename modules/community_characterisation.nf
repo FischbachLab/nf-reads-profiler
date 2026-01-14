@@ -91,10 +91,15 @@ process profile_function {
 
 	script:
 	"""
+	# check metaphlan output
 	head -n 3 ${metaphlan_bug_list}
 	ls -lhtr ${metaphlan_bug_list}
+	# get humann version humann v3.6
+	humann --version
+	echo ${task.cpus}
 	#HUMAnN will use the list of species detected by the profile_taxa process
 	humann \\
+		--verbose \\
 		--input $reads \\
 		--output . \\
 		--output-basename ${name} \\
@@ -103,14 +108,14 @@ process profile_function {
 		--protein-database ${params.uniref} \\
 		--pathways metacyc \\
 		--threads ${task.cpus} \\
-		--memory-use minimum &> ${name}_HUMAnN.log
+		--memory-use minimum | tee ${name}_HUMAnN.log
 
 	# MultiQC doesn't have a module for humann yet. As a consequence, I
 	# had to create a YAML file with all the info I need via a bash script
 	bash scrape_profile_functions.sh ${name} ${name}_HUMAnN.log > profile_functions_mqc.yaml
  	"""
 }
-
+//	&> ${name}_HUMAnN.log
 
 /**
 	Community Characterisation - STEP 3. Evaluates several alpha-diversity measures.

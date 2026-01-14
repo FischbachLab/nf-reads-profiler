@@ -3,6 +3,11 @@
 This pipeline is based on the original [YAMP](https://github.com/alesssia/YAMP) repo. Modifications have been made to make use of our infrastrucutre more readily. If you're here for a more customizable and flexible pipeline, please consider taking a look at the original repo.
 
 # nf-reads-profiler
+```{bash}
+sofware version
+  - metaphlan 4.1 
+  - humann 3.9
+```
 
 ## Usage
 

@@ -11,6 +11,8 @@ process get_software_versions {
 	//their version number (due to the fact that they live in the same container)
   container params.docker_container_biobakery
 
+  publishDir "${params.outdir}/${params.project}/pipeline_log", mode: 'copy'
+
 	//input:
 	//val (some_value)
 
@@ -81,7 +83,7 @@ process merge_paired_end_cleaned {
 
 process log {
 
-	publishDir "${params.outdir}/${params.project}/${params.prefix}/log", mode: 'copy'
+	publishDir "${params.outdir}/${params.project}/log", mode: 'copy'
 
   container params.docker_container_multiqc
 
