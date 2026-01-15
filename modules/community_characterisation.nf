@@ -94,7 +94,7 @@ process profile_function {
 	# check metaphlan output
 	head -n 3 ${metaphlan_bug_list}
 	ls -lhtr ${metaphlan_bug_list}
-	# get humann version humann v3.6
+	# get humann version humann
 	humann --version
 	echo ${task.cpus}
 	#HUMAnN will use the list of species detected by the profile_taxa process
