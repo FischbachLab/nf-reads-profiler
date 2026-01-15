@@ -11,7 +11,7 @@ process get_software_versions {
 	//their version number (due to the fact that they live in the same container)
   container params.docker_container_biobakery
 
-  publishDir "${params.outdir}/${params.project}/pipeline_log", mode: 'copy'
+  publishDir "${params.outdir}/${params.project}/pipeline_info", mode: 'copy'
 
 	//input:
 	//val (some_value)
@@ -38,6 +38,37 @@ process get_software_versions {
 	scrape_software_versions.py > software_versions_mqc.yaml
 	"""
 }
+/*
+Get the database versions from metaphlan and humann 
+*/
+process get_database_versions {
+
+	//Starting the biobakery container. I need to run metaphlan and Humann to get
+	//their version number (due to the fact that they live in the same container)
+  container params.docker_container_biobakery
+
+  publishDir "${params.outdir}/${params.project}/pipeline_info", mode: 'copy'
+
+	//input:
+	//val (some_value)
+
+	output:
+	path "database_versions.txt"
+
+	script:
+	
+	"""
+	echo "MetaPhlAn database:" > database_versions.txt
+	echo $params.metaphlan_index >> database_versions.txt
+	echo "MetaPhlAn database path:" >> database_versions.txt
+	echo $params.metaphlan_db >> database_versions.txt
+	echo " " >> database_versions.txt
+	echo "HUMAnN database path:" >> database_versions.txt
+	echo $params.chocophlan >> database_versions.txt
+	echo $params.uniref >> database_versions.txt
+	"""
+}
+
 
 process merge_paired_end_cleaned {
 
@@ -83,7 +114,7 @@ process merge_paired_end_cleaned {
 
 process log {
 
-	publishDir "${params.outdir}/${params.project}/log", mode: 'copy'
+	publishDir "${params.outdir}/${params.project}/pipeline_info", mode: 'copy'
 
   container params.docker_container_multiqc
 

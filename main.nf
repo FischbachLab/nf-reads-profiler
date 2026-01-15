@@ -3,7 +3,7 @@
 nextflow.enable.dsl=2
 
 include { profile_taxa; profile_function; alpha_diversity; merge_mp_results; prevalence_mp_results; sample_mp_results} from './modules/community_characterisation'
-include { merge_paired_end_cleaned; get_software_versions; log } from './modules/house_keeping'
+include { merge_paired_end_cleaned; get_software_versions; get_database_versions; log } from './modules/house_keeping'
 
 def versionMessage()
 {
@@ -244,6 +244,7 @@ workflow {
 
 	//Channel.of(1) |
 	get_software_versions()
+	get_database_versions()
 
 	//workflow_summary = create_workflow_summary(summary)
 
